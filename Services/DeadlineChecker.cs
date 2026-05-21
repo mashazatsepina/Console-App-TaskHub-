@@ -22,6 +22,8 @@ public class DeadlineChecker
 
         Task.Run(async () =>
         {
+            var notified = new HashSet<int>();
+
             while (!token.IsCancellationRequested)
             {
                 try
@@ -32,7 +34,10 @@ public class DeadlineChecker
                         .Where(t => t.Status != Status.Done && t.Deadline < DateTime.Now)
                         .ToList();
 
-                    foreach (var task in overdue)
+                    var currentOverdueIds = overdue.Select(t => t.Id).ToHashSet();
+                    notified.IntersectWith(currentOverdueIds);
+
+                    foreach (var task in overdue.Where(t => notified.Add(t.Id)))
                         OnOverdueTask?.Invoke(task);
                 }
                 catch (TaskCanceledException)
